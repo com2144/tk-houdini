@@ -9,6 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
+import subprocess
 import sys
 
 import sgtk
@@ -134,27 +135,62 @@ class HoudiniLauncher(SoftwareLauncher):
 
         return LaunchInformation(exec_path, args, required_env)
 
+
     def scan_software(self):
-        """
-        Scan the filesystem for houdini executables.
+        icon_path = os.path.join(
+            self.disk_location,
+            "icon_256.png"
+        )
 
-        :return: A list of :class:`SoftwareVersion` objects.
-        """
+        try:
+            import rez as _
+        except ImportError:
+            rez_path = self.get_rez_module_root()
 
-        self.logger.debug("Scanning for Houdini executables...")
+            if not rez_path:
+                raise EnvironmentError('rez is not installed and could not be automatically found. Cannot continue.')
+
+            sys.path.append(rez_path)
+        from rez.package_search import ResourceSearcher , ResourceSearchResultFormatter
+
+
+        searcher = ResourceSearcher()
+        formatter = ResourceSearchResultFormatter()
+        _ ,packages = searcher.search("houdini")
 
         supported_sw_versions = []
-        for sw_version in self._find_software():
-            (supported, reason) = self._is_supported(sw_version)
-            if supported:
-                supported_sw_versions.append(sw_version)
-            else:
-                self.logger.debug(
-                    "SoftwareVersion %s is not supported: %s" %
-                    (sw_version, reason)
-                )
+        self.logger.debug("Scanning for houdini executables...")
+        infos = formatter.format_search_results(packages)
+
+        for info in infos:
+            name,version = info[0].split("-")
+
+            software = SoftwareVersion(version,name,"rez_init",icon_path)
+            supported_sw_versions.append(software)
+
 
         return supported_sw_versions
+
+
+    def get_rez_module_root(self):
+        
+        
+        command = self.get_rez_root_command()
+        module_path, stderr = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).communicate()
+
+        module_path = module_path.strip()
+
+        if not stderr and module_path:
+            return module_path
+
+
+
+        return ''
+
+    def get_rez_root_command(self):
+
+        return 'rez-env rez -- printenv REZ_REZ_ROOT'
 
     def _find_software(self):
 
