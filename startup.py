@@ -152,7 +152,6 @@ class HoudiniLauncher(SoftwareLauncher):
         _ ,packages = searcher.search("houdini")
 
         supported_sw_versions = []
-<<<<<<< HEAD
         self.logger.debug("Scanning for houdini executables...")
         infos = formatter.format_search_results(packages)
 
@@ -162,16 +161,6 @@ class HoudiniLauncher(SoftwareLauncher):
             software = SoftwareVersion(version,name,"rez_init",icon_path)
             supported_sw_versions.append(software)
 
-=======
-        for sw_version in self._find_software():
-            (supported, reason) = self._is_supported(sw_version)
-            if supported:
-                supported_sw_versions.append(sw_version)
-            else:
-                self.logger.debug(
-                    "SoftwareVersion %s is not supported: %s" % (sw_version, reason)
-                )
->>>>>>> upstream/master
 
         return supported_sw_versions
 
