@@ -36,6 +36,7 @@ def bootstrap(plugin_root_path):
     # now see if we are running stand alone or in situ
     try:
         from sgtk_plugin_basic_houdini import manifest
+
         running_stand_alone = True
     except ImportError:
         manifest = None
@@ -69,7 +70,7 @@ def bootstrap(plugin_root_path):
 
         # open the yaml file and read the data
         with open(plugin_info_yml, "r") as plugin_info_fh:
-            plugin_info = yaml.load(plugin_info_fh)
+            plugin_info = yaml.load(plugin_info_fh, Loader=yaml.FullLoader)
 
         base_config = plugin_info["base_configuration"]
         plugin_id = plugin_info["plugin_id"]
@@ -95,8 +96,8 @@ def bootstrap(plugin_root_path):
         # credentials.
         user = sgtk.authentication.ShotgunAuthenticator().get_user()
     except sgtk.authentication.AuthenticationCancelled:
-        # TODO: show a "Shotgun > Login" menu in houdini
-        sgtk_logger.info("Shotgun login was cancelled by the user.")
+        # TODO: show a "SG > Login" menu in houdini
+        sgtk_logger.info("SG login was cancelled by the user.")
         return
 
     # Create a boostrap manager for the logged in user with the plug-in
@@ -119,7 +120,7 @@ def bootstrap(plugin_root_path):
     toolkit_mgr.progress_callback = bootstrap_progress_callback
 
     # start engine
-    sgtk_logger.info("Bootstrapping the Shotgun engine for Houdini...")
+    sgtk_logger.info("Bootstrapping the SG engine for Houdini...")
     toolkit_mgr.bootstrap_engine("tk-houdini", entity)
 
     sgtk_logger.debug("Bootstrap complete.")
@@ -133,5 +134,4 @@ def bootstrap_progress_callback(progress_value, message):
         reported in incremental order and always in the range 0.0 to 1.0
     :param str message: Progress message string
     """
-    print "Bootstrap progress %s%%: %s" % (int(progress_value * 100), message)
-
+    print("Bootstrap progress %s%%: %s" % (int(progress_value * 100), message))

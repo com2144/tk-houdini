@@ -12,6 +12,8 @@ import os
 import hou
 import sgtk
 
+from tank_vendor import six
+
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -36,11 +38,11 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         contain simple html for formatting.
         """
 
-        loader_url = "https://support.shotgunsoftware.com/hc/en-us/articles/219033078"
+        loader_url = "https://developer.shotgridsoftware.com/a4c0a4f1/?title=Loader"
 
         return """
-        Publishes the file to Shotgun. A <b>Publish</b> entry will be
-        created in Shotgun which will include a reference to the file's current
+        Publishes the file to ShotGrid. A <b>Publish</b> entry will be
+        created in ShotGrid which will include a reference to the file's current
         path on disk. If a publish template is configured, a copy of the
         current session will be copied to the publish template path which
         will be the file that is published. Other users will be able to access
@@ -55,7 +57,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         file to the next version after publishing.
 
         The <code>version</code> field of the resulting <b>Publish</b> in
-        Shotgun will also reflect the version number identified in the filename.
+        ShotGrid will also reflect the version number identified in the filename.
         The basic worklfow recognizes the following version formats by default:
 
         <ul>
@@ -82,7 +84,9 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         however only the most recent publish will be available to other users.
         Warnings will be provided during validation if there are previous
         publishes.
-        """ % (loader_url,)
+        """ % (
+            loader_url,
+        )
 
     @property
     def settings(self):
@@ -113,8 +117,8 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
                 "type": "template",
                 "default": None,
                 "description": "Template path for published work files. Should"
-                               "correspond to a template defined in "
-                               "templates.yml.",
+                "correspond to a template defined in "
+                "templates.yml.",
             }
         }
 
@@ -173,18 +177,13 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
             # provide a save button. the session will need to be saved before
             # validation will succeed.
             self.logger.warn(
-                "The Houdini session has not been saved.",
-                extra=_get_save_as_action()
+                "The Houdini session has not been saved.", extra=_get_save_as_action()
             )
 
         self.logger.info(
-            "Houdini '%s' plugin accepted the current Houdini session." %
-            (self.name,)
+            "Houdini '%s' plugin accepted the current Houdini session." % (self.name,)
         )
-        return {
-            "accepted": True,
-            "checked": True
-        }
+        return {"accepted": True, "checked": True}
 
     def validate(self, settings, item):
         """
@@ -211,10 +210,7 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
             # the session still requires saving. provide a save button.
             # validation fails.
             error_msg = "The Houdini session has not been saved."
-            self.logger.error(
-                error_msg,
-                extra=_get_save_as_action()
-            )
+            self.logger.error(error_msg, extra=_get_save_as_action())
             raise Exception(error_msg)
 
         # ---- check the session against any attached work template
@@ -237,15 +233,14 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
                         "action_button": {
                             "label": "Save File",
                             "tooltip": "Save the current Houdini session to a "
-                                       "different file name",
+                            "different file name",
                             # will launch wf2 if configured
-                            "callback": _get_save_as_action()
+                            "callback": _get_save_as_action(),
                         }
-                    }
+                    },
                 )
             else:
-                self.logger.debug(
-                    "Work template configured and matches session file.")
+                self.logger.debug("Work template configured and matches session file.")
         else:
             self.logger.debug("No work template configured.")
 
@@ -261,7 +256,8 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
                 (next_version_path, version) = self._get_next_version_info(
-                    next_version_path, item)
+                    next_version_path, item
+                )
 
             error_msg = "The next version of this file already exists on disk."
             self.logger.error(
@@ -270,10 +266,10 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
                     "action_button": {
                         "label": "Save to v%s" % (version,),
                         "tooltip": "Save to the next available version number, "
-                                   "v%s" % (version,),
-                        "callback": lambda: _save_session(next_version_path)
+                        "v%s" % (version,),
+                        "callback": lambda: _save_session(next_version_path),
                     }
-                }
+                },
             )
             raise Exception(error_msg)
 
@@ -282,7 +278,8 @@ class HoudiniSessionPublishPlugin(HookBaseClass):
         # populate the publish template on the item if found
         publish_template_setting = settings.get("Publish Template")
         publish_template = publisher.engine.get_template_by_name(
-            publish_template_setting.value)
+            publish_template_setting.value
+        )
         if publish_template:
             item.properties["publish_template"] = publish_template
 
@@ -341,7 +338,8 @@ def _save_session(path):
     # We need to flip the slashes on Windows to avoid a bug in Houdini. If we don't
     # the next Save As dialog will have the filename box populated with the complete
     # file path.
-    hou.hipFile.save(file_name=path.replace("\\", "/").encode("utf-8"))
+    sanitized_path = six.ensure_str(path.replace("\\", "/"))
+    hou.hipFile.save(file_name=sanitized_path)
 
 
 def _session_path():
@@ -379,6 +377,6 @@ def _get_save_as_action():
         "action_button": {
             "label": "Save As...",
             "tooltip": "Save the current session",
-            "callback": callback
+            "callback": callback,
         }
     }
