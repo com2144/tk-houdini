@@ -770,7 +770,7 @@ class HTTPPasswordMgr:
         domains = self.passwd.get(realm, {})
         for default_port in True, False:
             reduced_authuri = self.reduce_uri(authuri, default_port)
-            for uris, authinfo in domains.iteritems():
+            for uris, authinfo in domains.items():
                 for uri in uris:
                     if self.is_suburi(uri, reduced_authuri):
                         return authinfo
@@ -1179,7 +1179,7 @@ class AbstractHTTPHandler(BaseHandler):
 
         try:
             h.request(req.get_method(), req.get_selector(), req.data, headers)
-        except socket.error, err: # XXX what error?
+        except socket.error as err: # XXX what error?
             h.close()
             raise URLError(err)
         else:
@@ -1352,7 +1352,7 @@ class FileHandler(BaseHandler):
                 else:
                     origurl = 'file://' + filename
                 return addinfourl(open(localfile, 'rb'), headers, origurl)
-        except OSError, msg:
+        except OSError as msg:
             # urllib2 users shouldn't expect OSErrors coming from urlopen()
             raise URLError(msg)
         raise URLError('file not on local host')
@@ -1382,7 +1382,7 @@ class FTPHandler(BaseHandler):
 
         try:
             host = socket.gethostbyname(host)
-        except socket.error, msg:
+        except socket.error as msg:
             raise URLError(msg)
         path, attrs = splitattr(req.get_selector())
         dirs = path.split('/')
@@ -1408,8 +1408,9 @@ class FTPHandler(BaseHandler):
             sf = StringIO(headers)
             headers = mimetools.Message(sf)
             return addinfourl(fp, headers, req.get_full_url())
-        except ftplib.all_errors, msg:
-            raise URLError, ('ftp error: %s' % msg), sys.exc_info()[2]
+        except ftplib.all_errors as msg:
+            # raise URLError, ('ftp error: %s' % msg), sys.exc_info()[2]
+            raise URLError('ftp error: %s' % msg) ,None, sys.exc_info()[2]
 
     def connect_ftp(self, user, passwd, host, port, dirs, timeout):
         fw = ftpwrapper(user, passwd, host, port, dirs, timeout,
